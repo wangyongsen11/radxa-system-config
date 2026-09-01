@@ -1,1 +1,29 @@
-radxa-system-config-kernel-cmdline-no-serial.postinst
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        if [ ! -f /etc/kernel/cmdline ]; then
+            install -m 644 /usr/share/radxa-system-config/cmdline /etc/kernel/cmdline
+            u-boot-update
+        fi
+
+        # HDMI workaround: add clk_ignore_unused to kernel cmdline (QCS6490/9075 etc.)
+        if [ -f /etc/kernel/cmdline ]; then
+            if ! grep -q 'clk_ignore_unused' /etc/kernel/cmdline; then
+                echo "Adding clk_ignore_unused to /etc/kernel/cmdline (HDMI workaround)..."
+                sed -i 's/[[:space:]]*$/ clk_ignore_unused/' /etc/kernel/cmdline
+                if command -v kernel-install >/dev/null 2>&1; then
+                    for vmlinuz in /boot/vmlinuz-*; do
+                        [ -f "$vmlinuz" ] || continue
+                        kernel-install add "${vmlinuz#/boot/vmlinuz-}" "$vmlinuz" || true
+                    done
+                fi
+            fi
+        fi
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0
