@@ -1,3 +1,13 @@
+radxa-system-config (0.7.4) noble; urgency=medium
+
+  [ ZHANG Yuntian ]
+  * fix: do not pull display-manger by itself
+
+  [ Chongbiao Chen ]
+  * fix: add clk_ignore_unused to kernel cmdline
+
+ -- "Radxa Computer Co., Ltd" <dev@radxa.com>  Wed, 02 Sep 2026 10:41:44 +0000
+
 radxa-system-config (0.7.3) noble; urgency=medium
 
   [ Feng Zhang ]
