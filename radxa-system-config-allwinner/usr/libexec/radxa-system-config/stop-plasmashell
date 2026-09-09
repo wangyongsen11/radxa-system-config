@@ -1,0 +1,41 @@
+#!/bin/sh
+
+# Start Plasma's graceful shutdown immediately, before session teardown can
+# terminate the X server. The user manager stop below prevents a restart and
+# waits for the service to finish.
+for proc_comm in /proc/[0-9]*/comm; do
+    [ -r "$proc_comm" ] || continue
+    process_name=
+    IFS= read -r process_name < "$proc_comm" || continue
+    [ "$process_name" = plasmashell ] || continue
+
+    pid=${proc_comm#/proc/}
+    pid=${pid%/comm}
+    echo "Sending SIGTERM to plasmashell PID $pid before stopping SDDM"
+    kill -TERM "$pid" 2>/dev/null || true
+done
+
+for runtime_dir in /run/user/[0-9]*; do
+    [ -d "$runtime_dir" ] || continue
+
+    uid=${runtime_dir##*/}
+    case "$uid" in
+        '' | *[!0-9]*) continue ;;
+    esac
+
+    user=$(id -nu "$uid" 2>/dev/null || true)
+    [ -n "$user" ] || continue
+
+    state=$(systemctl --user --machine="${user}@.host" is-active plasma-plasmashell.service 2>/dev/null || true)
+    case "$state" in
+        active | activating | deactivating)
+            echo "Stopping plasma-plasmashell.service for user $user"
+            if ! systemctl --user --machine="${user}@.host" stop plasma-plasmashell.service; then
+                echo "Failed to stop plasma-plasmashell.service for user $user" >&2
+            fi
+            ;;
+    esac
+done
+
+# SDDM must continue stopping even when no Plasma user session is available.
+exit 0
