@@ -1,0 +1,15 @@
+#!/bin/sh
+set -e
+
+case "${1:-}" in
+    prereqs)
+        exit 0
+        ;;
+esac
+
+. /usr/share/initramfs-tools/hook-functions
+
+# Load the panel reset and backlight provider before display initialization.
+if modinfo -k "${version}" rpi-panel-v2-regulator >/dev/null 2>&1; then
+    force_load rpi-panel-v2-regulator
+fi
